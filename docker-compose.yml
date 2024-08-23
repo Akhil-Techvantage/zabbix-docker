@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0-oracle
+    container_name: mysql-server
+    environment:
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: zabbix_pwd
+      MYSQL_ROOT_PASSWORD: root_pwd
+    command: --character-set-server=utf8 --collation-server=utf8_bin --default-authentication-plugin=mysql_native_password
+    networks:
+      - zabbix-net
+    restart: unless-stopped
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  zabbix-java-gateway:
+    image: zabbix/zabbix-java-gateway:alpine-7.0-latest
+    container_name: zabbix-java-gateway
+    networks:
+      - zabbix-net
+    restart: unless-stopped
+
+  zabbix-server:
+    image: zabbix/zabbix-server-mysql:alpine-7.0-latest
+    container_name: zabbix-server-mysql
+    environment:
+      DB_SERVER_HOST: mysql-server
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: zabbix_pwd
+      ZBX_JAVAGATEWAY: zabbix-java-gateway
+    networks:
+      - zabbix-net
+    ports:
+      - "10051:10051"
+    restart: unless-stopped
+    volumes:
+      - zabbix-server-data:/var/lib/zabbix
+    depends_on:
+      - mysql
+      - zabbix-java-gateway
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-mysql:alpine-7.0-latest
+    container_name: zabbix-web-nginx-mysql
+    environment:
+      ZBX_SERVER_HOST: zabbix-server-mysql
+      DB_SERVER_HOST: mysql-server
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: zabbix_pwd
+    networks:
+      - zabbix-net
+    ports:
+      - "80:8080"
+    restart: unless-stopped
+
+networks:
+  zabbix-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  zabbix-server-data:
+
