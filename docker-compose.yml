@@ -60,10 +60,10 @@ services:
 
 networks:
   zabbix-net:
-    name: zabbix-net
     driver: bridge
 
 volumes:
   mysql-data:
   zabbix-server-data:
+
 
